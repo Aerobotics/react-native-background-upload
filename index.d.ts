@@ -124,6 +124,7 @@ declare module "react-native-background-upload" {
         static getRemainingBgTime(): Promise<number>
         static beginBackgroundTask(): Promise<number>
         static endBackgroundTask(id: number): void
+        static startUploads(options: UploadOptions[]): Promise<void>
     }
 
 }

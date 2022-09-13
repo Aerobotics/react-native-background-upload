@@ -287,6 +287,98 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
     }
 }
 
+RCT_EXPORT_METHOD(startUploads:(NSArray *)uploadOptions resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+{
+    for (NSDictionary *options in uploadOptions) {
+        NSString *uploadUrl = options[@"url"];
+        __block NSString *fileURI = options[@"path"] ?: @"";
+        NSString *method = options[@"method"] ?: @"POST";
+        NSString *uploadType = options[@"type"] ?: @"raw";
+        NSString *fieldName = options[@"field"];
+        NSString *customUploadId = options[@"customUploadId"];
+        NSDictionary *headers = options[@"headers"];
+        NSDictionary *parameters = options[@"parameters"];
+
+
+        NSString *thisUploadId = customUploadId;
+
+        if(!thisUploadId){
+            @synchronized(self)
+            {
+                thisUploadId = [NSString stringWithFormat:@"%lu", uploadId++];
+
+            }
+        }
+
+
+        @try {
+            NSURL *requestUrl = [NSURL URLWithString: uploadUrl];
+            if (requestUrl == nil) {
+                @throw @"Request URL cannot be nil";
+            }
+
+            NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestUrl];
+            [request setHTTPMethod: method];
+
+            [headers enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull val, BOOL * _Nonnull stop) {
+                if ([val respondsToSelector:@selector(stringValue)]) {
+                    val = [val stringValue];
+                }
+                if ([val isKindOfClass:[NSString class]]) {
+                    [request setValue:val forHTTPHeaderField:key];
+                }
+            }];
+
+
+            // asset library files have to be copied over to a temp file.  they can't be uploaded directly
+            if ([fileURI hasPrefix:@"assets-library"]) {
+                dispatch_group_t group = dispatch_group_create();
+                dispatch_group_enter(group);
+                [self copyAssetToFile:fileURI completionHandler:^(NSString * _Nullable tempFileUrl, NSError * _Nullable error) {
+                    if (error) {
+                        dispatch_group_leave(group);
+                        reject(@"RN Uploader", @"Asset could not be copied to temp file.", nil);
+                        return;
+                    }
+                    fileURI = tempFileUrl;
+                    dispatch_group_leave(group);
+                }];
+                dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+            }
+
+            NSURLSessionUploadTask *uploadTask;
+
+            if ([uploadType isEqualToString:@"multipart"]) {
+                NSString *uuidStr = [[NSUUID UUID] UUIDString];
+                [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", uuidStr] forHTTPHeaderField:@"Content-Type"];
+
+                NSData *httpBody = [self createBodyWithBoundary:uuidStr path:fileURI parameters: parameters fieldName:fieldName];
+
+                [request setHTTPBody: httpBody];
+                uploadTask = [[self urlSession] uploadTaskWithStreamedRequest:request];
+
+
+            } else {
+                if (parameters.count > 0) {
+                    reject(@"RN Uploader", @"Parameters supported only in multipart type", nil);
+                    return;
+                }
+
+                uploadTask = [[self urlSession] uploadTaskWithRequest:request fromFile:[NSURL URLWithString: fileURI]];
+            }
+
+            uploadTask.taskDescription = thisUploadId;
+            //NSLog(@"RNBU will start upload %@", uploadTask.taskDescription);
+            [uploadTask resume];
+        }
+        @catch (NSException *exception) {
+            //NSLog(@"RNBU startUpload error: %@", exception);
+            reject(@"RN Uploader", exception.name, nil);
+        }
+    }
+    resolve(nil);
+}
+
 /*
  * Cancels file upload
  * Accepts upload ID as a first argument, this upload will be cancelled
@@ -302,6 +394,22 @@ RCT_EXPORT_METHOD(cancelUpload: (NSString *)cancelUploadId resolve:(RCTPromiseRe
         }
     }];
     resolve([NSNumber numberWithBool:YES]);
+}
+
+RCT_REMAP_METHOD(getTasks, resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
+    [_urlSession getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
+        NSMutableArray *tasks = [NSMutableArray new];
+        for (NSURLSessionTask *uploadTask in uploadTasks) {
+            NSMutableDictionary *taskInfo = [[NSMutableDictionary alloc] init];
+            [taskInfo setObject:uploadTask.taskDescription forKey:@"id"];
+            NSLog(@"RNBU taskInfo %@", uploadTask.taskDescription);
+            NSNumber *state = [NSNumber numberWithInteger:uploadTask.state];
+            [taskInfo setObject:state forKey:@"state"];
+            [tasks addObject:taskInfo];
+        }
+        NSLog(@"RNBU tasks %@", tasks);
+        resolve(tasks);
+    }];
 }
 
 
@@ -438,7 +546,7 @@ RCT_EXPORT_METHOD(endBackgroundTask: (NSUInteger)taskId resolve:(RCTPromiseResol
             // UPDATE: Enforce a timeout here because we will otherwise
             // not get errors if the server times out
             sessionConfiguration.timeoutIntervalForResource =  12 * 60 * 60;
-            sessionConfiguration.HTTPMaximumConnectionsPerHost = 5;
+            sessionConfiguration.HTTPMaximumConnectionsPerHost = 12;
 
             _urlSession = [NSURLSession sessionWithConfiguration:sessionConfiguration delegate:self delegateQueue:nil];
         }
