@@ -287,7 +287,7 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
     }
 }
 
-RCT_EXPORT_METHOD(startUploads:(NSArray *)uploadOptions resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(scheduleUploads:(NSArray *)uploadOptions resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
 {
     for (NSDictionary *options in uploadOptions) {
         NSString *uploadUrl = options[@"url"];
@@ -368,14 +368,27 @@ RCT_EXPORT_METHOD(startUploads:(NSArray *)uploadOptions resolve:(RCTPromiseResol
             }
 
             uploadTask.taskDescription = thisUploadId;
-            //NSLog(@"RNBU will start upload %@", uploadTask.taskDescription);
-            [uploadTask resume];
         }
         @catch (NSException *exception) {
             //NSLog(@"RNBU startUpload error: %@", exception);
             reject(@"RN Uploader", exception.name, nil);
         }
     }
+    resolve(nil);
+}
+
+RCT_REMAP_METHOD(resumeUploads, resumeUploadsResolver:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
+    @try {
+        [_urlSession getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
+            for (NSURLSessionTask *uploadTask in uploadTasks) {
+                [uploadTask resume];
+            }
+        }];
+    }
+    @catch (NSException *exception) {
+        reject(@"RN Uploader", exception.name, nil);
+    }
+
     resolve(nil);
 }
 

@@ -1,4 +1,3 @@
-// @flow
 /**
  * Handles HTTP background file uploads from an iOS or Android device.
  */
@@ -94,8 +93,8 @@ It is recommended to add listeners in the .then of this promise.
 export const startUpload = (options: StartUploadArgs): Promise<string> =>
   NativeModule.startUpload(options);
 
-export const startUploads = (uploadOptions: StartUploadArgs[]): Promise<void> =>
-  NativeModule.startUploads(uploadOptions);
+export const scheduleUploads = (uploadOptions: StartUploadArgs[]): Promise<void> =>
+  NativeModule.scheduleUploads(uploadOptions);
 
 /*
 Cancels active upload by string ID of the upload.
@@ -180,12 +179,16 @@ export const endBackgroundTask = (id: number) => {
   }
 };
 
-export const getTasks = (): Promise<any>[] => {
+export const getTasks = (): Promise<any[]> => {
   if (Platform.OS === 'ios') {
     return NativeModule.getTasks();
   } else {
-    return Promise(null);
+    return Promise.resolve([]);
   }
+};
+
+export const resumeUploads = (): Promise<void> => {
+  return NativeModule.resumeUploads();
 };
 
 export default {
@@ -197,6 +200,7 @@ export default {
   getRemainingBgTime,
   beginBackgroundTask,
   endBackgroundTask,
-  startUploads,
+  scheduleUploads,
   getTasks,
+  resumeUploads,
 };

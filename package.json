@@ -2,7 +2,7 @@
   "name": "react-native-background-upload",
   "version": "6.5.0",
   "description": "Cross platform http post file uploader with android and iOS background support",
-  "main": "src/index.js",
+  "main": "src/index.ts",
   "scripts": {
     "lint": "yarn lint:ci --fix",
     "lint:ci": "eslint src example",
@@ -43,7 +43,9 @@
     "eslint": "^6.8.0",
     "husky": "^4.2.3",
     "lint-staged": "^10.0.8",
-    "semantic-release": "^15.13.31"
+    "semantic-release": "^15.13.31",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0"
   },
   "release": {
     "plugins": [
