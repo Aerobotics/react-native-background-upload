@@ -383,13 +383,13 @@ RCT_REMAP_METHOD(resumeUploads, resumeUploadsResolver:(RCTPromiseResolveBlock)re
             for (NSURLSessionTask *uploadTask in uploadTasks) {
                 [uploadTask resume];
             }
+            NSUInteger numberOfTasks = [uploadTasks count];
+            resolve([NSNumber numberWithUnsignedLong:numberOfTasks]);
         }];
     }
     @catch (NSException *exception) {
         reject(@"RN Uploader", exception.name, nil);
     }
-
-    resolve(nil);
 }
 
 /*
