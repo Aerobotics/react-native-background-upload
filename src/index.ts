@@ -187,7 +187,7 @@ export const getTasks = (): Promise<any[]> => {
   }
 };
 
-export const resumeUploads = (): Promise<void> => {
+export const resumeUploads = (): Promise<number> => {
   return NativeModule.resumeUploads();
 };
 
