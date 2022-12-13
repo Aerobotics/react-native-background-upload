@@ -392,6 +392,21 @@ RCT_REMAP_METHOD(resumeUploads, resumeUploadsResolver:(RCTPromiseResolveBlock)re
     }
 }
 
+RCT_REMAP_METHOD(cancelUploads, cancelUploadsResolver:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
+    @try {
+        [_urlSession getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
+            for (NSURLSessionTask *uploadTask in uploadTasks) {
+                [uploadTask cancel];
+            }
+            NSUInteger numberOfTasks = [uploadTasks count];
+            resolve([NSNumber numberWithUnsignedLong:numberOfTasks]);
+        }];
+    }
+    @catch (NSException *exception) {
+        reject(@"RN Uploader", exception.name, nil);
+    }
+}
+
 /*
  * Cancels file upload
  * Accepts upload ID as a first argument, this upload will be cancelled
