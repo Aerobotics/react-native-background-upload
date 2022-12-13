@@ -191,6 +191,10 @@ export const resumeUploads = (): Promise<number> => {
   return NativeModule.resumeUploads();
 };
 
+export const cancelUploads = (): Promise<number> => {
+  return NativeModule.cancelUploads();
+};
+
 export default {
   startUpload,
   cancelUpload,
@@ -203,4 +207,5 @@ export default {
   scheduleUploads,
   getTasks,
   resumeUploads,
+  cancelUploads,
 };
