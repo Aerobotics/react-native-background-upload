@@ -573,7 +573,7 @@ RCT_EXPORT_METHOD(endBackgroundTask: (NSUInteger)taskId resolve:(RCTPromiseResol
 
             // UPDATE: Enforce a timeout here because we will otherwise
             // not get errors if the server times out
-            sessionConfiguration.timeoutIntervalForResource =  10 * 60;
+            sessionConfiguration.timeoutIntervalForResource =  2 * 60;
             sessionConfiguration.discretionary = false;
             sessionConfiguration.HTTPMaximumConnectionsPerHost = 6;
 
