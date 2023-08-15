@@ -89,8 +89,19 @@ static VydiaRNFileUploader *sharedInstance;
 //    [self urlSession];
 }
 
--(void)stopObserving {
+- (void)stopObserving {
     isObserving = NO;
+    // Fix for code push updates and hot-reloading app in dev
+    // see https://github.com/react-native-webrtc/react-native-callkeep/issues/406
+    @try {
+        [self setValue:@0 forKey:@"_listenerCount"];
+        NSLog(@"RNBU reset _listenerCount");
+    }
+    @catch ( NSException *e ){
+        NSLog(@"[RNBU][stopObserving] exception: %@",e);
+        NSLog(@"[RNBU][stopObserving] RNCallKeep parent class RTCEventEmitter might have a broken state.");
+        NSLog(@"[RNBU][stopObserving] Please verify that the parent RTCEventEmitter.m has iVar `_listenerCount`.");
+    }
 }
 
 - (void)setBackgroundSessionCompletionHandler:(void (^)(void))handler {
