@@ -1,6 +1,6 @@
 {
   "name": "react-native-background-upload",
-  "version": "6.5.0",
+  "version": "6.6.0",
   "description": "Cross platform http post file uploader with android and iOS background support",
   "main": "src/index.ts",
   "scripts": {
@@ -24,7 +24,7 @@
   ],
   "peerDependencies": {
     "react": "*",
-    "react-native": ">=0.47.0"
+    "react-native": ">=0.81.0"
   },
   "author": "Steve Potter",
   "license": "BSD-3-Clause",
